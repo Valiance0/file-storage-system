@@ -1,0 +1,23 @@
+# Byte-code files
+*.pyc
+__pycache__/
+*.whl
+*.egg
+*.egg-info/
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Editor/OS temporary files
+.DS_Store
+.vscode/
+
+# Testing/Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# File Storage
+storage/
