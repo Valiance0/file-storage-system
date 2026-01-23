@@ -1,9 +1,17 @@
 import os
 import shutil
+from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, UploadFile
 from sqlmodel import SQLModel, Session, select
 from database import engine, get_database
 from schema import File as FileDB, User
+
+
+load_dotenv()
+STORAGE_FILE_PATH: str = os.getenv("STORAGE_FILE_PATH", "")
+if not STORAGE_FILE_PATH:
+    raise ValueError("STORAGE_FILE_PATH not set in env variables.")
+
 
 SQLModel.metadata.create_all(engine)
 
@@ -15,7 +23,7 @@ def upload_file(file: UploadFile, database:Session = Depends(get_database)):
     if not filename:
         raise HTTPException(status_code=400, detail="Missing file name.") 
     
-    file_path = f"../storage/{filename}"
+    file_path = f"STORAGE_FILE_PATH{filename}"
     with open(file_path, 'wb') as buffer:
         shutil.copyfileobj(file.file, buffer)
     
