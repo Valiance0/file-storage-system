@@ -30,7 +30,7 @@ def process_file_upload(upload_file: UploadFile):
             buffer.write(chunk)
             file_size += len(chunk)
     
-    return {"hash": hasher.hexdigest(), "temp_path": temp_path, "file_size": file_size}
+    return {"hash": hasher.hexdigest(), "temp_path": temp_path, "size": file_size}
 
 def save_file(temp_path: str, final_path: str):
     shutil.move(temp_path, final_path)
