@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, UploadFile
 from sqlmodel import SQLModel, Session, select
 from database import engine, get_database
-from schema import File as FileDB, User
+from schema import  User, UserFile, FileBlob
 
 
 load_dotenv()
@@ -17,6 +17,7 @@ SQLModel.metadata.create_all(engine)
 
 app = FastAPI()
 
+# Need to Fix since database was restructured.
 @app.post("/upload")
 def upload_file(file: UploadFile, database:Session = Depends(get_database)):
     filename = file.filename
@@ -29,7 +30,7 @@ def upload_file(file: UploadFile, database:Session = Depends(get_database)):
     
     file_size = os.path.getsize(file_path)
 
-    new_file = FileDB(filename = filename, file_path = file_path, file_hash = "temp", size_in_bytes=file_size)
+    new_file = UserFile(filename = filename)
 
     database.add(new_file)
     database.commit()
