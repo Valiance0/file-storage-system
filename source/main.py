@@ -24,7 +24,7 @@ def upload_file(file: UploadFile, database:Session = Depends(get_database)):
     if not filename:
         raise HTTPException(status_code=400, detail="Missing file name.") 
     
-    file_path = f"STORAGE_FILE_PATH{filename}"
+    file_path = f"{STORAGE_FILE_PATH}{filename}"
     with open(file_path, 'wb') as buffer:
         shutil.copyfileobj(file.file, buffer)
     
