@@ -8,7 +8,9 @@ __pycache__/
 # Virtual environment
 .venv/
 venv/
+.env/
 env/
+
 
 # Editor/OS temporary files
 .DS_Store
