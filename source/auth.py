@@ -27,7 +27,7 @@ def get_user_id(database: Session, token: str):
 def create_password_hash(password: str):
     byte_password = password.encode("utf-8")
     salt = bcrypt.gensalt()
-    return bcrypt.hashpw(byte_password, salt)
+    return bcrypt.hashpw(byte_password, salt).decode("utf-8")
     
 def check_password(password: str, hash: str):
     byte_password = password.encode("utf-8")

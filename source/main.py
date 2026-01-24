@@ -63,7 +63,6 @@ def login( response: Response, form_data:  Annotated[OAuth2PasswordRequestForm, 
     
     return {"status:": "success"}
 
-# Still have to add user logic
 @app.post("/upload")
 def upload_file(upload_file: UploadFile, request: Request, database:Session = Depends(get_database)):
     token = request.cookies.get("session_token")
