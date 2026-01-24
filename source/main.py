@@ -108,12 +108,12 @@ def upload_file(upload_file: UploadFile, request: Request, database:Session = De
         
         if not new_blob.id:
             raise ValueError(f"Database failed to create blob_id for hash:{hash}")
-        
         new_user_file = create_user_file(user_id = current_user.id,filename=filename, blob_id=new_blob.id, database=database)
         database.commit()
         return {"status":"success", "file_id": new_user_file.id, "filename" : new_user_file.filename}
-    
-    
+    except:
+        database.rollback()
+        raise
     finally:
         file_utils.delete_temp_file(temp_path)
 
