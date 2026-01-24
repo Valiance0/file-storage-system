@@ -1,12 +1,15 @@
 import os
 import shutil
+from typing import Annotated
 from dotenv import load_dotenv
-from fastapi import FastAPI, Depends, HTTPException, UploadFile
-from sqlmodel import SQLModel, Session, select
+from fastapi import FastAPI, Depends, HTTPException, Response, UploadFile
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlmodel import SQLModel, Session, select, true
 
 import file_utils
 from database import engine, get_database
 from schema import  User, UserFile, FileBlob
+import auth
 
 
 load_dotenv()
@@ -43,6 +46,23 @@ def create_user_file(filename: str, blob_id: int, database: Session):
 
     return new_user_file
 
+
+
+@app.post("/login")
+def login( response: Response, form_data:  Annotated[OAuth2PasswordRequestForm, Depends()], database: Session = Depends(get_database)):
+    user = database.exec(select(User).where(User.username == form_data.username)).first()
+    
+    if not user or auth.check_password(form_data.password, User.password_hash):
+        raise HTTPException(status_code=400, detail="Incorrect Password.")
+
+    if not user.id:
+        raise ValueError(f"Database failed to create id for user{user.username}")
+
+    token = auth.create_user_session(database = database, user_id = user.id)
+
+    response.set_cookie(key="session_token", value=token, httponly=True, secure=True, samesite="strict")
+    
+    return {"status:": "success"}
 
 # Still have to add user logic
 @app.post("/upload")
