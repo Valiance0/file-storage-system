@@ -85,7 +85,7 @@ def login(response: Response, form_data: Annotated[OAuth2PasswordRequestForm, De
 
     response.set_cookie(key="session_token", value=token, httponly=True, secure=True, samesite="strict")
     
-    return {"status:": "success"}
+    return {"status": "success"}
 
 @app.post("/upload")
 def upload_file(upload_file: UploadFile, request: Request, database:Session = Depends(get_database)):
