@@ -3,6 +3,7 @@ import shutil
 from typing import Annotated
 from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, Request, Response, UploadFile
+from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import SQLModel, Session, select, true
 
@@ -117,3 +118,21 @@ def upload_file(upload_file: UploadFile, request: Request, database:Session = De
         file_utils.delete_temp_file(temp_path)
 
 
+@app.get("/file/{file_id}")
+def download_file(file_id: int, request: Request, database: Session = Depends(get_database)):
+    token = request.cookies.get("session_token")
+    current_user = auth.get_current_user(token=token or "", database=database)
+
+    user_file = database.exec(select(UserFile).where(UserFile.id == file_id).where(UserFile.user_id == current_user.id)).first()
+
+    if not user_file:
+        raise HTTPException(status_code=400, detail=f"File with file id {file_id} not found or user lacks access.")
+    
+    file_blob = database.exec(select(FileBlob).where(FileBlob.id == user_file.blob_id)).first()
+    if not file_blob:
+        raise HTTPException(status_code=400, detail=f"File blob for not found.")
+    
+    if not os.path.exists(file_blob.filepath):
+        raise HTTPException(status_code=400, detail="File not found on disk.")
+    
+    return FileResponse(path=file_blob.filepath, filename=user_file.filename, media_type="application/octet-stream")
