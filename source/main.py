@@ -47,8 +47,33 @@ def create_user_file(filename: str, blob_id: int, user_id: int, database: Sessio
     return new_user_file
 
 
+
+@app.post("/register")
+def register(response: Response, form_data: Annotated[OAuth2PasswordRequestForm, Depends()], database: Session = Depends(get_database)):
+    username = form_data.username
+    password = form_data.password
+
+    existing_user = database.exec(select(User).where(User.username==username)).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username taken. Please pick a different one.")
+    
+    password_hash = auth.create_password_hash(password)
+    
+    new_user = User(username=username, password_hash=password_hash)
+    database.add(new_user)
+    database.commit()
+    database.refresh(new_user)
+
+    if not new_user.id:
+        raise HTTPException(status_code=400, detail="Database Failed to assign id for user.")
+
+    token = auth.create_user_session(user_id=new_user.id, database=database)
+    response.set_cookie(key="session_token", value=token, httponly=True, secure=True, samesite="strict")
+
+    return {"status": "success", "username": username}
+
 @app.post("/login")
-def login( response: Response, form_data:  Annotated[OAuth2PasswordRequestForm, Depends()], database: Session = Depends(get_database)):
+def login(response: Response, form_data: Annotated[OAuth2PasswordRequestForm, Depends()], database: Session = Depends(get_database)):
     user = database.exec(select(User).where(User.username == form_data.username)).first()
     
     if not user or not auth.check_password(form_data.password, user.password_hash):
@@ -68,7 +93,7 @@ def upload_file(upload_file: UploadFile, request: Request, database:Session = De
     token = request.cookies.get("session_token")
     current_user = auth.get_current_user(token = token or "", database = database)
     if not current_user.id:
-        raise HTTPException(status_code=500, detail="User ID is missing")
+        raise HTTPException(status_code=400, detail="User ID is missing")
 
     filename = upload_file.filename
     if not upload_file or not filename:
