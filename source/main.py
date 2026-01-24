@@ -123,14 +123,12 @@ def download_file(file_id: int, request: Request, database: Session = Depends(ge
     token = request.cookies.get("session_token")
     current_user = auth.get_current_user(token=token or "", database=database)
 
-    user_file = database.exec(select(UserFile).where(UserFile.id == file_id).where(UserFile.user_id == current_user.id)).first()
+    result = database.exec(select(UserFile, FileBlob).join(FileBlob, UserFile.blob_id == FileBlob.id).where(UserFile.id == file_id).where(UserFile.user_id == current_user.id)).first() # type: ignore
 
-    if not user_file:
+    if not result:
         raise HTTPException(status_code=400, detail=f"File with file id {file_id} not found or user lacks access.")
     
-    file_blob = database.exec(select(FileBlob).where(FileBlob.id == user_file.blob_id)).first()
-    if not file_blob:
-        raise HTTPException(status_code=400, detail=f"File blob for not found.")
+    user_file, file_blob = result
     
     if not os.path.exists(file_blob.filepath):
         raise HTTPException(status_code=400, detail="File not found on disk.")
