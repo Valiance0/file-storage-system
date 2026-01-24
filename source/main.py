@@ -19,6 +19,31 @@ SQLModel.metadata.create_all(engine)
 
 app = FastAPI()
 
+def get_or_create_file_blob(temp_path: str, hash : str, size_in_bytes: int, database:Session):
+    database_blob = database.exec(select(FileBlob).where(FileBlob.hash == hash)).first()
+    if database_blob:
+        return database_blob
+    else:
+        final_file_name = hash
+        final_path = f"{STORAGE_FILE_PATH}{final_file_name}"
+        file_utils.save_file(temp_path, final_path)
+        
+        new_file_blob = FileBlob(hash=hash, filepath=final_path, size_in_bytes=size_in_bytes)
+        database.add(new_file_blob)
+        database.flush()
+        database.refresh(new_file_blob)
+
+        return new_file_blob
+
+def create_user_file(filename: str, blob_id: int, database: Session):
+    new_user_file = UserFile(filename=filename, blob_id = blob_id)
+    database.add(new_user_file)
+    database.flush()
+    database.refresh(new_user_file)
+
+    return new_user_file
+
+
 # Still have to add user logic
 @app.post("/upload")
 def upload_file(upload_file: UploadFile, database:Session = Depends(get_database)):
@@ -31,36 +56,18 @@ def upload_file(upload_file: UploadFile, database:Session = Depends(get_database
     size_in_bytes = processed_upload["size"]
     temp_path = processed_upload["temp_path"]
     
-
-    database_blob = database.exec(select(FileBlob).where(FileBlob.hash == hash)).first()
-
-    if database_blob:
-        file_utils.delete_temp_file(temp_path)
-        final_blob_id = database_blob.id
-        print(f"Duplicate blob uploaded, id:{final_blob_id}")
-        status_message = "Uploaded (Duplicate Blob)"
-    else:
-        final_file_name = hash
-        final_path = f"{STORAGE_FILE_PATH}{final_file_name}"
-        file_utils.save_file(temp_path, final_path)
+    try:
+        new_blob = get_or_create_file_blob(temp_path = temp_path, hash = hash, size_in_bytes=size_in_bytes, database=database) 
         
-        new_file_blob = FileBlob(hash=hash, filepath=final_path, size_in_bytes=size_in_bytes)
-        database.add(new_file_blob)
+        if not new_blob.id:
+            raise ValueError(f"Database failed to create blob_id for hash:{hash}")
+        
+        new_user_file = create_user_file(filename=filename, blob_id=new_blob.id, database=database)
         database.commit()
-        database.refresh(new_file_blob)
-
-        final_blob_id = new_file_blob.id
-        status_message = "Uploaded"
-
-    new_user_file = UserFile(filename=filename, blob_id = final_blob_id)
-    database.add(new_user_file)
-    database.commit()
-    database.refresh(new_user_file)
-
-    return {"status":"success", "file_id": new_user_file.id, "filename" : new_user_file.filename}
+        return {"status":"success", "file_id": new_user_file.id, "filename" : new_user_file.filename}
+    
+    
+    finally:
+        file_utils.delete_temp_file(temp_path)
 
 
-@app.get("/show_database")
-def show_database(database: Session = Depends(get_database)):
-    users = database.exec(select(User)).all()
-    return {"message": "Database Connection Succesful", "user_count": len(users)}
