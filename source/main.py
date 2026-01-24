@@ -46,8 +46,6 @@ def create_user_file(filename: str, blob_id: int, user_id: int, database: Sessio
 
     return new_user_file
 
-
-
 @app.post("/register")
 def register(response: Response, form_data: Annotated[OAuth2PasswordRequestForm, Depends()], database: Session = Depends(get_database)):
     username = form_data.username

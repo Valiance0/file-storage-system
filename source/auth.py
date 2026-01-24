@@ -16,14 +16,6 @@ def create_user_session(database: Session, user_id: int):
 
     return token
 
-def get_user_id(database: Session, token: str):
-    
-    database_session = database.exec(select(UserSession).where(UserSession.token == token)).first()
-    if not database_session:
-        return None
-    
-    return database_session.user_id
-
 def create_password_hash(password: str):
     byte_password = password.encode("utf-8")
     salt = bcrypt.gensalt()
