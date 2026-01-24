@@ -2,7 +2,7 @@ import os
 import shutil
 from typing import Annotated
 from dotenv import load_dotenv
-from fastapi import FastAPI, Depends, HTTPException, Response, UploadFile
+from fastapi import FastAPI, Depends, HTTPException, Request, Response, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import SQLModel, Session, select, true
 
@@ -38,8 +38,8 @@ def get_or_create_file_blob(temp_path: str, hash : str, size_in_bytes: int, data
 
         return new_file_blob
 
-def create_user_file(filename: str, blob_id: int, database: Session):
-    new_user_file = UserFile(filename=filename, blob_id = blob_id)
+def create_user_file(filename: str, blob_id: int, user_id: int, database: Session):
+    new_user_file = UserFile(user_id = user_id, filename=filename, blob_id = blob_id)
     database.add(new_user_file)
     database.flush()
     database.refresh(new_user_file)
@@ -47,13 +47,12 @@ def create_user_file(filename: str, blob_id: int, database: Session):
     return new_user_file
 
 
-
 @app.post("/login")
 def login( response: Response, form_data:  Annotated[OAuth2PasswordRequestForm, Depends()], database: Session = Depends(get_database)):
     user = database.exec(select(User).where(User.username == form_data.username)).first()
     
-    if not user or auth.check_password(form_data.password, User.password_hash):
-        raise HTTPException(status_code=400, detail="Incorrect Password.")
+    if not user or not auth.check_password(form_data.password, user.password_hash):
+        raise HTTPException(status_code=400, detail="Incorrect Username or Password.")
 
     if not user.id:
         raise ValueError(f"Database failed to create id for user{user.username}")
@@ -66,7 +65,12 @@ def login( response: Response, form_data:  Annotated[OAuth2PasswordRequestForm, 
 
 # Still have to add user logic
 @app.post("/upload")
-def upload_file(upload_file: UploadFile, database:Session = Depends(get_database)):
+def upload_file(upload_file: UploadFile, request: Request, database:Session = Depends(get_database)):
+    token = request.cookies.get("session_token")
+    current_user = auth.get_current_user(token = token or "", database = database)
+    if not current_user.id:
+        raise HTTPException(status_code=500, detail="User ID is missing")
+
     filename = upload_file.filename
     if not upload_file or not filename:
         raise HTTPException(status_code=400, detail="Missing file name.") 
@@ -82,7 +86,7 @@ def upload_file(upload_file: UploadFile, database:Session = Depends(get_database
         if not new_blob.id:
             raise ValueError(f"Database failed to create blob_id for hash:{hash}")
         
-        new_user_file = create_user_file(filename=filename, blob_id=new_blob.id, database=database)
+        new_user_file = create_user_file(user_id = current_user.id,filename=filename, blob_id=new_blob.id, database=database)
         database.commit()
         return {"status":"success", "file_id": new_user_file.id, "filename" : new_user_file.filename}
     
