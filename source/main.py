@@ -134,3 +134,13 @@ def download_file(file_id: int, request: Request, database: Session = Depends(ge
         raise HTTPException(status_code=400, detail="File not found on disk.")
     
     return FileResponse(path=file_blob.filepath, filename=user_file.filename, media_type="application/octet-stream")
+
+@app.get("/list")
+def list(request: Request, database: Session = Depends(get_database)):
+    token = request.cookies.get("session_token")
+    current_user = auth.get_current_user(token=token or "", database=database)
+    
+    results = database.exec(select(UserFile, FileBlob).join(FileBlob, UserFile.blob_id == FileBlob.id).where(UserFile.user_id == current_user.id)).all() # type: ignore
+    list = [{"filename":user_file.filename, "file_id":user_file.id, "upload_date":user_file.upload_date, "size_in_bytes": file_blob.size_in_bytes} for user_file, file_blob in results]
+    return list
+    
