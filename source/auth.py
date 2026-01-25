@@ -7,7 +7,7 @@ from sqlmodel import Session, select
 
 from schema import User, UserSession
 
-def create_user_session(database: Session, user_id: int):
+def create_user_session(user_id: int, database: Session):
     token = str(uuid.uuid4())
 
     new_user_session = UserSession(token = token, user_id = user_id)
@@ -15,6 +15,14 @@ def create_user_session(database: Session, user_id: int):
     database.commit()
 
     return token
+
+def delete_user_session(token: str, database: Session):
+    user_session = database.exec(select(UserSession).where(UserSession.token == token)).first()
+    if not user_session:
+        return False
+    database.delete(user_session)
+    database.commit()
+    return True
 
 def create_password_hash(password: str):
     byte_password = password.encode("utf-8")
@@ -28,16 +36,16 @@ def check_password(password: str, hash: str):
 
 def get_current_user(token: str, database: Session):
     if not token:
-        raise HTTPException(status_code=400, detail="User not Authenticated")
+        raise HTTPException(status_code=400, detail="User not Authenticated.")
     
     session = database.exec(select(UserSession).where(UserSession.token == token)).first()
     
     if not session:
-        raise HTTPException(status_code=400, detail="Invalid Session Token")
+        raise HTTPException(status_code=400, detail="Invalid Session Token.")
     
     user = database.exec(select(User).where(User.id == session.user_id)).first()
 
     if not user:
-        raise HTTPException(status_code=400, detail="User not found")
+        raise HTTPException(status_code=400, detail="User not found.")
     
     return user

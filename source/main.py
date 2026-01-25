@@ -1,11 +1,10 @@
 import os
-import shutil
 from typing import Annotated
 from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlmodel import SQLModel, Session, select, true
+from sqlmodel import SQLModel, Session, select
 
 import file_utils
 from database import engine, get_database
@@ -86,6 +85,17 @@ def login(response: Response, form_data: Annotated[OAuth2PasswordRequestForm, De
     response.set_cookie(key="session_token", value=token, httponly=True, secure=True, samesite="strict")
     
     return {"status": "success"}
+
+@app.post("/logout")
+def logout(request: Request, response: Response, database: Session=Depends(get_database)):
+    token = request.cookies.get("session_token")
+    if not token:
+        raise HTTPException(status_code=400, detail="User not authenticated.")
+
+    auth.delete_user_session(token=token, database=database) 
+    response.delete_cookie(key="session_token")
+    return {"status": "success"}
+    
 
 @app.post("/upload")
 def upload_file(upload_file: UploadFile, request: Request, database:Session = Depends(get_database)):
