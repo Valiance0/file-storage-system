@@ -143,4 +143,26 @@ def list(request: Request, database: Session = Depends(get_database)):
     results = database.exec(select(UserFile, FileBlob).join(FileBlob, UserFile.blob_id == FileBlob.id).where(UserFile.user_id == current_user.id)).all() # type: ignore
     list = [{"filename":user_file.filename, "file_id":user_file.id, "upload_date":user_file.upload_date, "size_in_bytes": file_blob.size_in_bytes} for user_file, file_blob in results]
     return list
+
+@app.delete("/delete/{file_id}")
+def delete(file_id, request: Request, database: Session = Depends(get_database)):
+    token = request.cookies.get("session_token")
+    current_user = auth.get_current_user(token=token or "", database=database)
+
+    result = database.exec(select(UserFile, FileBlob).join(FileBlob, UserFile.blob_id == FileBlob.id).where(UserFile.id == file_id).where(UserFile.user_id == current_user.id)).first() # type: ignore
+    if not result:
+        raise HTTPException(status_code=400, detail=f"File with file id {file_id} not found or user lacks access.")
     
+    user_file, file_blob = result
+
+    database.delete(user_file)
+
+    other_file = database.exec(select(UserFile).where(UserFile.blob_id == file_blob.id)).first()
+    if not other_file:
+        if os.path.exists(file_blob.filepath):
+            os.remove(file_blob.filepath)
+        database.delete(file_blob)
+    
+    database.commit()
+
+    return {"status":"success"}
