@@ -121,7 +121,7 @@ def upload_file(upload_file: UploadFile, request: Request, database:Session = De
         new_user_file = create_user_file(user_id = current_user.id,filename=filename, blob_id=new_blob.id, database=database)
         database.commit()
         return {"status":"success", "file_id": new_user_file.id, "filename" : new_user_file.filename}
-    except:
+    except Exception:
         database.rollback()
         raise
     finally:
