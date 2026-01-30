@@ -37,9 +37,9 @@ The API will be available at `http://localhost:8000`
 ## Features
 
 - User registration and authentication
-- File upload and storage with deduplication (hash-based)
+- File upload and storage with deduplication
 - File retrieval
-- Database persistence with SQLAlchemy/SQLModel
+- Database persistence with SQLModel
 
 ## Project Structure
 
@@ -50,4 +50,3 @@ The API will be available at `http://localhost:8000`
   - `schema.py` - SQLModel schemas
   - `file_utils.py` - File handling utilities
 - `storage/` - File storage directory
-- `tests/` - Test suite
