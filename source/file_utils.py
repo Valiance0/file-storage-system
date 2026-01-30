@@ -8,7 +8,6 @@ from fastapi import UploadFile
 
 CHUNK_SIZE = 1048576 # 1MB
 
-dotenv.load_dotenv()
 STORAGE_FILE_PATH: str = os.getenv("STORAGE_FILE_PATH", "")
 if not STORAGE_FILE_PATH:
     raise ValueError("STORAGE_FILE_PATH not set in env variables.")
