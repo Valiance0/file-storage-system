@@ -12,7 +12,6 @@ from schema import  User, UserFile, FileBlob
 import auth
 
 
-load_dotenv()
 STORAGE_FILE_PATH: str = os.getenv("STORAGE_FILE_PATH", "")
 if not STORAGE_FILE_PATH:
     raise ValueError("STORAGE_FILE_PATH not set in env variables.")
@@ -146,7 +145,7 @@ def download_file(file_id: int, request: Request, database: Session = Depends(ge
     return FileResponse(path=file_blob.filepath, filename=user_file.filename, media_type="application/octet-stream")
 
 @app.get("/list")
-def list(request: Request, database: Session = Depends(get_database)):
+def list_files(request: Request, database: Session = Depends(get_database)):
     token = request.cookies.get("session_token")
     current_user = auth.get_current_user(token=token or "", database=database)
     
