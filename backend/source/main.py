@@ -6,13 +6,15 @@ from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import SQLModel, Session, select
 
-import file_utils
-from database import engine, get_database
-from schema import  User, UserFile, FileBlob
-import auth
+import source.business.file_utils as file_utils
+from source.persistence.database import engine, get_database
+from source.models import  User, UserFile, FileBlob
+import source.business.auth as auth
+
+load_dotenv()
 
 
-STORAGE_FILE_PATH: str = os.getenv("STORAGE_FILE_PATH", "")
+STORAGE_FILE_PATH: str = os.getenv("FILE_STORAGE_PATH", "")
 if not STORAGE_FILE_PATH:
     raise ValueError("STORAGE_FILE_PATH not set in env variables.")
 

@@ -2,13 +2,15 @@
 import os
 import shutil
 import uuid
-import dotenv   
+from dotenv import load_dotenv
 import hashlib
 from fastapi import UploadFile
 
+load_dotenv()
+
 CHUNK_SIZE = 1048576 # 1MB
 
-STORAGE_FILE_PATH: str = os.getenv("STORAGE_FILE_PATH", "")
+STORAGE_FILE_PATH: str = os.getenv("FILE_STORAGE_PATH", "")
 if not STORAGE_FILE_PATH:
     raise ValueError("STORAGE_FILE_PATH not set in env variables.")
 
