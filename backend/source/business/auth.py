@@ -5,7 +5,7 @@ import bcrypt
 from fastapi import HTTPException
 from sqlmodel import Session, select
 
-from schema import User, UserSession
+from source.models import User, UserSession
 
 def create_user_session(user_id: int, database: Session):
     token = str(uuid.uuid4())
