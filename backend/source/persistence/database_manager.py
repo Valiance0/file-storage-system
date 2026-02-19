@@ -1,5 +1,4 @@
-import os
-from dotenv import load_dotenv
+from source.utils.config import get_settings
 from sqlmodel import SQLModel, create_engine, Session
 
 load_dotenv()
@@ -13,3 +12,5 @@ engine = create_engine(DATABASE_URL)
 def get_database():
     with Session(engine) as session:
         yield session
+
+class DatabaseManager():
