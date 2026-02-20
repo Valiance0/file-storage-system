@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import SQLModel, Session, select
 
 import source.business.file_utils as file_utils
-from source.persistence.database import engine, get_database
+from source.persistence.database_manager import get_database_manager
 from source.models import  User, UserFile, FileBlob
 import source.business.auth as auth
 

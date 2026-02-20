@@ -1,16 +1,24 @@
-from source.utils.config import get_settings
+from functools import lru_cache
+from typing import Iterator
+
+from sqlalchemy import Engine
 from sqlmodel import SQLModel, create_engine, Session
-
-load_dotenv()
-DATABASE_URL: str = os.getenv("DATABASE_URL", "")
-
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL not set in env variables.")
-
-engine = create_engine(DATABASE_URL)
-
-def get_database():
-    with Session(engine) as session:
-        yield session
+from source.models import  User, UserFile, FileBlob, UserSession
 
 class DatabaseManager():
+    engine: Engine
+    models = [User, UserSession, UserFile, FileBlob]
+
+    def __init__(self, database_url: str):
+        self.engine = create_engine(database_url)
+
+    def initialize_database(self):
+        SQLModel.metadata.create_all(self.engine)
+
+    def get_database(self) -> Iterator[Session] :
+        with Session(self.engine) as session:
+            yield session        
+
+@lru_cache
+def get_database_manager(database_url: str) -> DatabaseManager:
+    return DatabaseManager(database_url)
