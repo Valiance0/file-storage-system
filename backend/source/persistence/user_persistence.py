@@ -14,8 +14,12 @@ class UserPersistence:
     def get_all_users(self, session: Session) -> Sequence[User]:
         return session.exec(select(User)).all()
 
-    def create_new_user(self, session: Session, user: User):
-        session.add(user)
-        session.commit()
-        session.refresh(user)
+    def create_new_user(self, session: Session, user: User) -> User:
+        try:
+            session.add(user)
+            session.commit()
+            session.refresh(user)
+        except Exception:
+            session.rollback()
+            raise 
         return user
