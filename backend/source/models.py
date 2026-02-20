@@ -1,4 +1,4 @@
-from sqlmodel import SQLModel, Field
+from sqlmodel import Relationship, SQLModel, Field
 from datetime import datetime, timezone
 
 
@@ -11,9 +11,15 @@ class User(SQLModel, table=True):
     username: str = Field(index=True)
     password_hash: str
 
+    sessions: list["UserSession"] = Relationship(back_populates="user")
+    files: list["UserFile"] = Relationship(back_populates="user")
+
 class UserSession(SQLModel, table=True):
-    token: str = Field(primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
+    token: str = Field(index=True)
     user_id: int = Field(foreign_key="user.id")
+
+    user: "User" = Relationship(back_populates="sessions")
 
 
 class UserFile(SQLModel, table=True):
@@ -24,8 +30,13 @@ class UserFile(SQLModel, table=True):
     user_id: int = Field(foreign_key = "user.id")
     blob_id: int = Field(foreign_key = "fileblob.id")
 
+    user: "User" = Relationship(back_populates="files")
+    blob: "FileBlob" = Relationship(back_populates="user_files")
+
 class FileBlob(SQLModel,  table=True):
     id: int | None = Field(default=None, primary_key=True)
     hash: str = Field(index=True)
     filepath: str = Field(index=True)
     size_in_bytes: int
+
+    user_files: list["UserFile"] = Relationship(back_populates="blob")
